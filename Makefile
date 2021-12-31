@@ -8,7 +8,7 @@ format: isort
 
 test:
 	docker stop $(MONGODB_CONTAINER_NAME) || true
-	docker run -d --rm --name $(MONGODB_CONTAINER_NAME) -p 27017:27017 mongo:4.2
+	docker run -d --rm --name $(MONGODB_CONTAINER_NAME) -p 27017:27017 mongo:4.4
 	pytest --cov=fastapi_users_db_mongodb/ --cov-report=term-missing --cov-fail-under=100
 	docker stop $(MONGODB_CONTAINER_NAME)
 

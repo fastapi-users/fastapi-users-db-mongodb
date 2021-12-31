@@ -29,31 +29,30 @@ class MongoDBUserDatabase(BaseUserDatabase[UD]):
     ):
         super().__init__(user_db_model)
         self.collection = collection
-        self.collection.create_index("id", unique=True)
-        self.collection.create_index("email", unique=True)
+        self.initialized = False
 
         if email_collation:
             self.email_collation = email_collation  # pragma: no cover
         else:
             self.email_collation = Collation("en", strength=2)
 
-        self.collection.create_index(
-            "email",
-            name="case_insensitive_email_index",
-            collation=self.email_collation,
-        )
-
     async def get(self, id: UUID4) -> Optional[UD]:
+        await self._initialize()
+
         user = await self.collection.find_one({"id": id})
         return self.user_db_model(**user) if user else None
 
     async def get_by_email(self, email: str) -> Optional[UD]:
+        await self._initialize()
+
         user = await self.collection.find_one(
             {"email": email}, collation=self.email_collation
         )
         return self.user_db_model(**user) if user else None
 
     async def get_by_oauth_account(self, oauth: str, account_id: str) -> Optional[UD]:
+        await self._initialize()
+
         user = await self.collection.find_one(
             {
                 "oauth_accounts.oauth_name": oauth,
@@ -63,12 +62,29 @@ class MongoDBUserDatabase(BaseUserDatabase[UD]):
         return self.user_db_model(**user) if user else None
 
     async def create(self, user: UD) -> UD:
+        await self._initialize()
+
         await self.collection.insert_one(user.dict())
         return user
 
     async def update(self, user: UD) -> UD:
+        await self._initialize()
+
         await self.collection.replace_one({"id": user.id}, user.dict())
         return user
 
     async def delete(self, user: UD) -> None:
+        await self._initialize()
+
         await self.collection.delete_one({"id": user.id})
+
+    async def _initialize(self):
+        if not self.initialized:
+            await self.collection.create_index("id", unique=True)
+            await self.collection.create_index("email", unique=True)
+            await self.collection.create_index(
+                "email",
+                name="case_insensitive_email_index",
+                collation=self.email_collation,
+            )
+            self.initialized = True
