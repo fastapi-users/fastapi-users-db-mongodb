@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import UUID4
 from pymongo.collation import Collation
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 class MongoDBUserDatabase(BaseUserDatabase[UD]):
